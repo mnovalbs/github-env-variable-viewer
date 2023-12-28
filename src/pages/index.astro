@@ -1,8 +1,17 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Home from '../components/Home';
+import Layout from "@src/layouts/Layout.astro";
+import OrganizationList from "@src/components/OrganizationList";
+import { octokit } from "@src/utils/octokit";
+import Breadcrumbs from "@src/components/Breadcrumbs";
+
+const { data: organizations } = await octokit.request("GET /user/orgs", {
+  headers: {
+    "X-GitHub-Api-Version": "2022-11-28",
+  },
+});
 ---
 
-<Layout title="Welcome to Astro.">
-	<Home client:load />
+<Layout>
+  <Breadcrumbs names={[]} />
+  <OrganizationList organizations={organizations} />
 </Layout>

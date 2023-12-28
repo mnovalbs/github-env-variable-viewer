@@ -1,22 +1,21 @@
 ---
-interface Props {
-	title: string;
-}
-
-const { title } = Astro.props;
+import { ViewTransitions } from "astro:transitions";
 ---
 
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="description" content="Astro description" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		<title>{title}</title>
-	</head>
-	<body>
-		<slot />
-	</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="Astro description" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>GitHub Environment Variable Manager</title>
+    <ViewTransitions />
+  </head>
+  <body class="bg-slate-200 p-8">
+    <div class="container max-w-lg h-screen mx-auto">
+      <slot />
+    </div>
+  </body>
 </html>

@@ -1,0 +1,81 @@
+---
+import Breadcrumbs from "@src/components/Breadcrumbs";
+import VariableList from "@src/components/VariableList";
+import { GITHUB_TOKEN } from "@src/constants/config";
+import Layout from "@src/layouts/Layout.astro";
+import { octokit } from "@src/utils/octokit";
+
+const { orgName, repoName, envName } = Astro.params;
+
+const { data: repository } = await octokit.request(
+  "GET /repos/{owner}/{repo}",
+  {
+    owner: orgName!,
+    repo: repoName!,
+    headers: {
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  }
+);
+
+const { id: repositoryId } = repository;
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const name = formData.get("name")?.toString();
+  const updatedName = formData.get("updatedName")?.toString();
+  const updatedValue = formData.get("updatedValue")?.toString();
+
+  if (name) {
+    const options = {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      body: JSON.stringify({
+        name: updatedName,
+        value: updatedValue,
+      }),
+    };
+
+    await fetch(
+      `https://api.github.com/repositories/${repositoryId}/environments/${envName}/variables/${name}`,
+      options
+    );
+  } else {
+    await octokit.request(
+      "POST /repositories/{repository_id}/environments/{environment_name}/variables",
+      {
+        repository_id: repositoryId,
+        environment_name: envName!,
+        name: updatedName!,
+        value: updatedValue!,
+        headers: {
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+      }
+    );
+  }
+}
+
+const {
+  data: { variables = [] },
+} = await octokit.request(
+  "GET /repositories/{repository_id}/environments/{environment_name}/variables",
+  {
+    repository_id: repository.id,
+    environment_name: envName!,
+    headers: {
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  }
+);
+---
+
+<Layout>
+  <Breadcrumbs names={[orgName!, repoName!, envName!]} />
+  <VariableList variables={variables} client:visible />
+</Layout>

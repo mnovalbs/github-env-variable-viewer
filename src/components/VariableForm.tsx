@@ -1,40 +1,30 @@
-import { useState } from "react";
-import type { ActionVariable } from "../types/github";
+import type { EnvironmentVariable } from "../types/github";
 
 interface VariableFormProps {
-  variable: ActionVariable;
-  onSave(variable: ActionVariable): void;
+  variable: EnvironmentVariable;
 }
 
-function VariableForm({ variable, onSave }: VariableFormProps) {
-  const [name, setName] = useState(variable.name ?? "");
-  const [value, setValue] = useState(variable.value ?? "");
-
+function VariableForm({ variable }: Readonly<VariableFormProps>) {
   return (
     <div className="flex flex-col gap-2">
       <input
         className="input input-bordered input-sm w-full"
         placeholder="Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
+        defaultValue={variable.name}
+        name="updatedName"
+        required
       />
       <textarea
         className="textarea textarea-bordered textarea-sm w-full leading-4 text-xs font-[monospace]"
         placeholder="Value"
         rows={8}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
+        defaultValue={variable.value}
+        name="updatedValue"
+        required
       />
 
       <div className="flex justify-end">
-        <button
-          className="btn btn-sm btn-primary"
-          onClick={() => {
-            if (name.trim().length > 0 && value.trim().length > 0) {
-              onSave({ name, value });
-            }
-          }}
-        >
+        <button type="submit" className="btn btn-sm btn-primary">
           Save
         </button>
       </div>
