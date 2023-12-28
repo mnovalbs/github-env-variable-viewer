@@ -6,8 +6,6 @@ cp .env.sample .env
 
 # update .env
 # GITHUB_TOKEN={github token}
-# GITHUB_OWNER={organization owner}
-# GITHUB_REPO={repository name}
 ```
 
 ### Install Dependencies
