@@ -13,9 +13,11 @@ import { ViewTransitions } from "astro:transitions";
     <title>GitHub Environment Variable Manager</title>
     <ViewTransitions />
   </head>
-  <body class="bg-slate-200 p-8">
+  <body class="bg-slate-200">
     <div class="container max-w-lg h-screen mx-auto">
-      <slot />
+      <div class="p-8 h-full">
+        <slot />
+      </div>
     </div>
   </body>
 </html>

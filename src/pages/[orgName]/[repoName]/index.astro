@@ -3,18 +3,25 @@ import Layout from "@src/layouts/Layout.astro";
 import { octokit } from "@src/utils/octokit";
 import EnvironmentList from "@src/components/EnvironmentList";
 import Breadcrumbs from "@src/components/Breadcrumbs";
+import type { Environment } from "@src/types/github";
 
 const { orgName, repoName } = Astro.params;
 
-const {
-  data: { environments = [] },
-} = await octokit.request("GET /repos/{owner}/{repo}/environments", {
-  owner: orgName!,
-  repo: repoName!,
-  headers: {
-    "X-GitHub-Api-Version": "2022-11-28",
-  },
-});
+let environments: Environment[] = []
+
+try {
+  const {
+    data,
+  } = await octokit.request("GET /repos/{owner}/{repo}/environments", {
+    owner: orgName!,
+    repo: repoName!,
+    headers: {
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+
+  environments = data.environments ?? []
+} catch (e) {}
 ---
 
 <Layout>
