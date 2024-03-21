@@ -60,6 +60,7 @@ export const getVariables = async (props: {
       {
         repository_id: props.repositoryId,
         environment_name: props.envName,
+        per_page: 30,
         headers: {
           "X-GitHub-Api-Version": "2022-11-28",
         },
