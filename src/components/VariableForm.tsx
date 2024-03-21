@@ -2,9 +2,10 @@ import type { EnvironmentVariable } from "../types/github";
 
 interface VariableFormProps {
   variable: EnvironmentVariable;
+  disabled?: boolean;
 }
 
-function VariableForm({ variable }: Readonly<VariableFormProps>) {
+function VariableForm({ variable, disabled }: Readonly<VariableFormProps>) {
   return (
     <div className="flex flex-col gap-2">
       <input
@@ -12,6 +13,7 @@ function VariableForm({ variable }: Readonly<VariableFormProps>) {
         placeholder="Name"
         defaultValue={variable.name}
         name="updatedName"
+        disabled={disabled}
         required
       />
       <textarea
@@ -20,11 +22,16 @@ function VariableForm({ variable }: Readonly<VariableFormProps>) {
         rows={8}
         defaultValue={variable.value}
         name="updatedValue"
+        disabled={disabled}
         required
       />
 
       <div className="flex justify-end">
-        <button type="submit" className="btn btn-sm btn-primary">
+        <button
+          disabled={disabled}
+          type="submit"
+          className="btn btn-sm btn-primary"
+        >
           Save
         </button>
       </div>

@@ -3,12 +3,14 @@ import VariableForm from "./VariableForm";
 
 interface VariableListProps {
   variables: EnvironmentVariable[];
-  defaultKeyword?: string;
+  envName: string
 }
 
 const MODAL_NAME = "modal_create";
 
-function VariableList({ variables }: Readonly<VariableListProps>) {
+function VariableList({ variables, envName }: Readonly<VariableListProps>) {
+  const isProd = envName.toLowerCase().startsWith('prod')
+
   const closeModal = () => {
     const modal = document.getElementById(MODAL_NAME);
     if (modal) {
@@ -32,6 +34,7 @@ function VariableList({ variables }: Readonly<VariableListProps>) {
           <div className="text-2xl font-bold">Environment Variables</div>
           <button
             className="btn btn-sm btn-outline btn-primary"
+            disabled={isProd}
             onClick={showModal}
           >
             Add New Variable
@@ -57,7 +60,7 @@ function VariableList({ variables }: Readonly<VariableListProps>) {
                   <div className="collapse-content">
                     <form method="POST">
                       <input type="hidden" name="name" value={variable.name} />
-                      <VariableForm variable={variable} />
+                      <VariableForm variable={variable} disabled={isProd} />
                     </form>
                   </div>
                 </div>
@@ -77,7 +80,7 @@ function VariableList({ variables }: Readonly<VariableListProps>) {
           </button>
           <h3 className="font-bold text-lg">Add New Variable</h3>
           <form method="POST" className="mt-4">
-            <VariableForm variable={{ name: "", value: "" }} />
+            <VariableForm variable={{ name: "", value: "" }} disabled={isProd} />
           </form>
         </div>
       </dialog>

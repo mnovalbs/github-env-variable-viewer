@@ -11,9 +11,11 @@ import {
 
 const { orgName = "", repoName = "", envName = "" } = Astro.params;
 
+const isProd = envName.toLowerCase().startsWith('prod')
+
 const { id: repositoryId } = await getRepository({ orgName, repoName });
 
-if (Astro.request.method === "POST") {
+if (Astro.request.method === "POST" && !isProd) {
   const formData = await Astro.request.formData();
   const name = formData.get("name")?.toString() ?? "";
   const updatedName = formData.get("updatedName")?.toString() ?? "";
@@ -48,5 +50,5 @@ const variables = await getVariables({ repositoryId, envName });
 
 <Layout>
   <Breadcrumbs names={[orgName!, repoName!, envName!]} />
-  <VariableList variables={variables} client:visible />
+  <VariableList variables={variables} envName={envName} client:visible />
 </Layout>
