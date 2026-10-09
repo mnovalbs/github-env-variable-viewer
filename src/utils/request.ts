@@ -24,10 +24,14 @@ export const updateEnvironmentVariable = async (props: {
     }),
   };
 
-  await fetch(
-    `https://api.github.com/repositories/${repositoryId}/environments/${envName}/variables/${name}`,
+  const res = await fetch(
+    `https://api.github.com/repositories/${repositoryId}/environments/${encodeURIComponent(envName)}/variables/${encodeURIComponent(name)}`,
     options
   );
+
+  if (!res.ok) {
+    throw new Error(`${res.status} ${await res.text()}`);
+  }
 };
 
 export const getRepository = async (props: {
@@ -69,30 +73,26 @@ export const getVariables = async (props: {
   repositoryId: number;
   envName: string;
 }) => {
-  try {
-    const LIMIT = 30
-    let page = 0
-    let totalCount = 30 
-    let totalPage = Math.ceil(totalCount / LIMIT)
-    let variables: {
-      name: string;
-      value: string;
-      created_at: string;
-      updated_at: string;
-    }[] = []
+  const LIMIT = 30
+  let page = 0
+  let totalCount = 30
+  let totalPage = Math.ceil(totalCount / LIMIT)
+  let variables: {
+    name: string;
+    value: string;
+    created_at: string;
+    updated_at: string;
+  }[] = []
 
-    while (page < totalPage) {
-      page++
-      const {
-        data: { variables: variablesPerPage, total_count },
-      } = await getVariablesPerPage({repositoryId: props.repositoryId, envName: props.envName, page})
-      variables = variables.concat(variablesPerPage)
-      totalCount = total_count
-      totalPage = Math.ceil(totalCount / LIMIT)
-    }
-
-    return variables;
-  } catch (e) {
-    return [];
+  while (page < totalPage) {
+    page++
+    const {
+      data: { variables: variablesPerPage, total_count },
+    } = await getVariablesPerPage({repositoryId: props.repositoryId, envName: props.envName, page})
+    variables = variables.concat(variablesPerPage)
+    totalCount = total_count
+    totalPage = Math.ceil(totalCount / LIMIT)
   }
+
+  return variables;
 };

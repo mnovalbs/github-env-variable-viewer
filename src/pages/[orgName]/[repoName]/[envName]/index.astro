@@ -15,40 +15,58 @@ const isProd = envName.toLowerCase().startsWith('prod')
 
 const { id: repositoryId } = await getRepository({ orgName, repoName });
 
+let error = "";
+
 if (Astro.request.method === "POST" && !isProd) {
   const formData = await Astro.request.formData();
   const name = formData.get("name")?.toString() ?? "";
   const updatedName = formData.get("updatedName")?.toString() ?? "";
   const updatedValue = formData.get("updatedValue")?.toString() ?? "";
 
-  if (name) {
-    await updateEnvironmentVariable({
-      name,
-      updatedName,
-      updatedValue,
-      repositoryId,
-      envName,
-    });
-  } else {
-    await octokit.request(
-      "POST /repositories/{repository_id}/environments/{environment_name}/variables",
-      {
-        repository_id: repositoryId,
-        environment_name: envName!,
-        name: updatedName!,
-        value: updatedValue!,
-        headers: {
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
-      }
-    );
+  try {
+    if (name) {
+      await updateEnvironmentVariable({
+        name,
+        updatedName,
+        updatedValue,
+        repositoryId,
+        envName,
+      });
+    } else {
+      await octokit.request(
+        "POST /repositories/{repository_id}/environments/{environment_name}/variables",
+        {
+          repository_id: repositoryId,
+          environment_name: envName!,
+          name: updatedName!,
+          value: updatedValue!,
+          headers: {
+            "X-GitHub-Api-Version": "2022-11-28",
+          },
+        }
+      );
+    }
+  } catch (e) {
+    error = `Failed to save variable: ${e instanceof Error ? e.message : e}`;
   }
 }
 
-const variables = await getVariables({ repositoryId, envName });
+let variables: Awaited<ReturnType<typeof getVariables>> = [];
+let loadError = "";
+
+try {
+  variables = await getVariables({ repositoryId, envName });
+} catch (e) {
+  loadError = `Failed to load variables: ${e instanceof Error ? e.message : e}`;
+}
 ---
 
 <Layout>
   <Breadcrumbs names={[orgName!, repoName!, envName!]} />
+  {[error, loadError].filter(Boolean).map((message) => (
+    <div role="alert" class="alert alert-error mb-4">
+      <span>{message}</span>
+    </div>
+  ))}
   <VariableList variables={variables} envName={envName} client:visible />
 </Layout>
