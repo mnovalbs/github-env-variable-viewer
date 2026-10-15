@@ -30,6 +30,7 @@ bun dev               # http://localhost:4321
 | `bun dev` | Start dev server |
 | `bun run build` | Typecheck (`astro check`) + production build |
 | `bun run preview` | Preview the production build |
+| `bun start` | Run the built server (`node dist/server/entry.mjs`) |
 
 There is no test suite; `bun run build` is the check to run before pushing.
 

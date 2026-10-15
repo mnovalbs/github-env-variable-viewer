@@ -11,20 +11,8 @@ const MODAL_NAME = "modal_create";
 function VariableList({ variables, envName }: Readonly<VariableListProps>) {
   const isProd = envName.toLowerCase().startsWith('prod')
 
-  const closeModal = () => {
-    const modal = document.getElementById(MODAL_NAME);
-    if (modal) {
-      // @ts-expect-error
-      modal.close();
-    }
-  };
-
   const showModal = () => {
-    const modal = document.getElementById(MODAL_NAME);
-    if (modal) {
-      // @ts-expect-error
-      modal.showModal();
-    }
+    (document.getElementById(MODAL_NAME) as HTMLDialogElement | null)?.showModal();
   };
 
   return (
@@ -72,12 +60,11 @@ function VariableList({ variables, envName }: Readonly<VariableListProps>) {
 
       <dialog id={MODAL_NAME} className="modal">
         <div className="modal-box">
-          <button
-            className="btn btn-sm btn-circle btn-ghost absolute right-5 top-5"
-            onClick={closeModal}
-          >
-            ✕
-          </button>
+          <form method="dialog">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-5 top-5">
+              ✕
+            </button>
+          </form>
           <h3 className="font-bold text-lg">Add New Variable</h3>
           <form method="POST" className="mt-4">
             <VariableForm variable={{ name: "", value: "" }} disabled={isProd} />

@@ -14,12 +14,7 @@ export type Environment = NonNullable<
 export type SearchRepository =
   Endpoints["GET /search/repositories"]["response"]["data"]["items"][number];
 
-export type EnvironmentVariable = Omit<
-  Endpoints["GET /repos/{owner}/{repo}/actions/organization-variables"]["response"]["data"]["variables"][number],
-  "created_at" | "updated_at"
->;
-
-export type ActionVariable = Omit<
+export type EnvironmentVariable = Pick<
   components["schemas"]["actions-variable"],
-  "created_at" | "updated_at"
+  "name" | "value"
 >;

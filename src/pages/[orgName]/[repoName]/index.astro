@@ -1,34 +1,32 @@
 ---
 import Layout from "@src/layouts/Layout.astro";
 import { octokit } from "@src/utils/octokit";
+import { errorMessage } from "@src/utils/request";
 import EnvironmentList from "@src/components/EnvironmentList";
 import Breadcrumbs from "@src/components/Breadcrumbs";
 import type { Environment } from "@src/types/github";
 
-const { orgName, repoName } = Astro.params;
+const { orgName = "", repoName = "" } = Astro.params;
 
 let environments: Environment[] = []
+let error = ""
 
 try {
-  const {
-    data,
-  } = await octokit.request("GET /repos/{owner}/{repo}/environments", {
-    owner: orgName!,
-    repo: repoName!,
-    headers: {
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
+  environments = await octokit.paginate("GET /repos/{owner}/{repo}/environments", {
+    owner: orgName,
+    repo: repoName,
+    per_page: 100,
   });
-
-  environments = data.environments ?? []
-} catch (e) {}
+} catch (e) {
+  error = `Failed to load environments: ${errorMessage(e)}`;
+}
 ---
 
-<Layout>
-  <Breadcrumbs names={[orgName!, repoName!]} />
+<Layout errors={[error]}>
+  <Breadcrumbs names={[orgName, repoName]} />
   <EnvironmentList
-    orgName={orgName!}
-    repoName={repoName!}
+    orgName={orgName}
+    repoName={repoName}
     environments={environments}
   />
 </Layout>

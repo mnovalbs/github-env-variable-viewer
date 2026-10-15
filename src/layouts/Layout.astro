@@ -1,12 +1,18 @@
 ---
 import { ViewTransitions } from "astro:transitions";
+
+interface Props {
+  errors?: string[];
+}
+
+const { errors = [] } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="en" class="bg-slate-200">
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content="Astro description" />
+    <meta name="description" content="Browse and edit GitHub Actions environment variables" />
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
@@ -16,6 +22,11 @@ import { ViewTransitions } from "astro:transitions";
   <body>
     <div class="container max-w-lg h-screen mx-auto">
       <div class="p-8 h-full">
+        {errors.filter(Boolean).map((message) => (
+          <div role="alert" class="alert alert-error mb-4">
+            <span>{message}</span>
+          </div>
+        ))}
         <slot />
       </div>
     </div>

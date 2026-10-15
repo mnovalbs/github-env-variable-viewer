@@ -15,6 +15,7 @@ bun install       # install deps
 bun dev           # dev server (astro dev)
 bun run build     # astro check (typecheck) + astro build
 bun run preview   # preview production build
+bun start         # run the built server (node dist/server/entry.mjs)
 bunx astro check  # typecheck only
 ```
 
@@ -22,7 +23,7 @@ No test suite or linter is configured in this repo; `astro check` is the only au
 
 ## Setup
 
-Copy `.env.sample` to `.env` and set `GITHUB_TOKEN` (a GitHub personal access token). `GITHUB_OWNER`/`GITHUB_REPO` are also read from env via `src/constants/config.ts` but are not currently used by any route.
+Copy `.env.sample` to `.env` and set `GITHUB_TOKEN` (a GitHub personal access token).
 
 ## Architecture
 
@@ -34,9 +35,9 @@ Copy `.env.sample` to `.env` and set `GITHUB_TOKEN` (a GitHub personal access to
   - `/[orgName]/[repoName]/[envName]` → variable list/editor for that environment
 - **Data access** goes through two layers:
   - `src/utils/octokit.ts` — a single shared `Octokit` instance authenticated with `GITHUB_TOKEN`, used directly in page frontmatter for simple GET requests.
-  - `src/utils/request.ts` — hand-written helpers for endpoints Octokit's typed request wrapper doesn't cover well: `getRepository`, `getVariables` (paginates all pages of the variables endpoint), and `updateEnvironmentVariable` (raw `fetch` PATCH, since Octokit's typed client doesn't expose this route cleanly).
-- **Page-level POST handling**: the `[envName]/index.astro` route implements create/update as one Astro page — it checks `Astro.request.method === "POST"`, reads form fields, and dispatches to `updateEnvironmentVariable` (when a variable `name` is present, i.e. editing) or a direct `octokit.request` POST (when creating a new variable). There is no separate API route. Write/load failures are caught in the page frontmatter and rendered as daisyUI `alert-error` banners rather than thrown, so helpers in `request.ts` should throw on failure and let the page decide.
-- **Production guard**: environments whose name starts with `prod` (case-insensitive) are read-only. The check is duplicated — server-side in `[envName]/index.astro` (skips the POST handler) and client-side in `VariableList.tsx` (disables buttons/forms). Keep both in sync; the server check is the real protection.
+  - `src/utils/request.ts` — helpers used by the env-variable page: `getRepository`, `getVariables` (`octokit.paginate` with an explicit item type, since paginate's types don't list this route), `createEnvironmentVariable`, `updateEnvironmentVariable` (passes the body via `data` because the route's path param and body field are both `name`), and `errorMessage`.
+- **Page-level POST handling**: the `[envName]/index.astro` route implements create/update as one Astro page — it checks `Astro.request.method === "POST"`, reads form fields, and dispatches to `updateEnvironmentVariable` (when a variable `name` is present, i.e. editing) or `createEnvironmentVariable` (when creating a new variable). There is no separate API route. POSTs whose `Origin` header doesn't match the app's origin are rejected (CSRF guard, since every request acts with the server token), and a successful save redirects back to the same page (Post/Redirect/Get). Load/write failures are caught in each page's frontmatter and passed to `<Layout errors={[...]}>`, which renders them as daisyUI `alert-error` banners, so helpers in `request.ts` should throw on failure and let the page decide.
+- **Production guard**: environments whose name starts with `prod` (case-insensitive) are read-only. The check is duplicated — server-side in `[envName]/index.astro` (rejects the POST with a read-only error) and client-side in `VariableList.tsx` (disables buttons/forms). Keep both in sync; the server check is the real protection.
 - **No app-level auth**: every visitor acts with the server's `GITHUB_TOKEN`, so the app is meant for local/internal use only.
 - **Types**: `src/types/github.ts` derives all domain types (`Organization`, `Repository`, `Environment`, `EnvironmentVariable`, etc.) from `@octokit/types`/`@octokit/openapi-types` `Endpoints`/`components`, rather than hand-declaring shapes — prefer extending this pattern for new GitHub data rather than writing new interfaces.
 - **UI**: React components (`.tsx`) are used for interactive pieces (lists, forms) and hydrated selectively (e.g. `client:visible` on `VariableList` in the env-variable page); Astro `.astro` files own layout/data-fetching and are otherwise server-only. Styling is Tailwind + daisyUI (see [tailwind.config.mjs](tailwind.config.mjs)).

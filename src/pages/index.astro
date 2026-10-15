@@ -2,16 +2,21 @@
 import Layout from "@src/layouts/Layout.astro";
 import OrganizationList from "@src/components/OrganizationList";
 import { octokit } from "@src/utils/octokit";
+import { errorMessage } from "@src/utils/request";
 import Breadcrumbs from "@src/components/Breadcrumbs";
+import type { Organization } from "@src/types/github";
 
-const { data: organizations } = await octokit.request("GET /user/orgs", {
-  headers: {
-    "X-GitHub-Api-Version": "2022-11-28",
-  },
-});
+let organizations: Organization[] = [];
+let error = "";
+
+try {
+  organizations = await octokit.paginate("GET /user/orgs", { per_page: 100 });
+} catch (e) {
+  error = `Failed to load organizations: ${errorMessage(e)}`;
+}
 ---
 
-<Layout>
+<Layout errors={[error]}>
   <Breadcrumbs names={[]} />
   <OrganizationList organizations={organizations} />
 </Layout>

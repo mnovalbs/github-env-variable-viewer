@@ -2,8 +2,9 @@
 import Breadcrumbs from "@src/components/Breadcrumbs";
 import VariableList from "@src/components/VariableList";
 import Layout from "@src/layouts/Layout.astro";
-import { octokit } from "@src/utils/octokit";
 import {
+  createEnvironmentVariable,
+  errorMessage,
   updateEnvironmentVariable,
   getRepository,
   getVariables,
@@ -13,60 +14,64 @@ const { orgName = "", repoName = "", envName = "" } = Astro.params;
 
 const isProd = envName.toLowerCase().startsWith('prod')
 
-const { id: repositoryId } = await getRepository({ orgName, repoName });
-
 let error = "";
+let loadError = "";
+let variables: Awaited<ReturnType<typeof getVariables>> = [];
+let repositoryId: number | undefined;
 
-if (Astro.request.method === "POST" && !isProd) {
-  const formData = await Astro.request.formData();
-  const name = formData.get("name")?.toString() ?? "";
-  const updatedName = formData.get("updatedName")?.toString() ?? "";
-  const updatedValue = formData.get("updatedValue")?.toString() ?? "";
+try {
+  ({ id: repositoryId } = await getRepository({ orgName, repoName }));
+} catch (e) {
+  loadError = `Failed to load repository: ${errorMessage(e)}`;
+}
 
-  try {
-    if (name) {
-      await updateEnvironmentVariable({
-        name,
-        updatedName,
-        updatedValue,
-        repositoryId,
-        envName,
-      });
-    } else {
-      await octokit.request(
-        "POST /repositories/{repository_id}/environments/{environment_name}/variables",
-        {
-          repository_id: repositoryId,
-          environment_name: envName!,
-          name: updatedName!,
-          value: updatedValue!,
-          headers: {
-            "X-GitHub-Api-Version": "2022-11-28",
-          },
-        }
-      );
+if (repositoryId !== undefined && Astro.request.method === "POST") {
+  if (isProd) {
+    error = "Production environment is read-only";
+  } else if (Astro.request.headers.get("origin") !== Astro.url.origin) {
+    // CSRF guard: anyone can POST here and we act with the server's token
+    error = "Invalid request origin";
+  } else {
+    const formData = await Astro.request.formData();
+    const name = formData.get("name")?.toString() ?? "";
+    const updatedName = formData.get("updatedName")?.toString() ?? "";
+    const updatedValue = formData.get("updatedValue")?.toString() ?? "";
+
+    try {
+      if (name) {
+        await updateEnvironmentVariable({
+          name,
+          updatedName,
+          updatedValue,
+          repositoryId,
+          envName,
+        });
+      } else {
+        await createEnvironmentVariable({
+          name: updatedName,
+          value: updatedValue,
+          repositoryId,
+          envName,
+        });
+      }
+      // Post/Redirect/Get so a refresh doesn't resubmit the form
+      return Astro.redirect(Astro.url.pathname);
+    } catch (e) {
+      error = `Failed to save variable: ${errorMessage(e)}`;
     }
-  } catch (e) {
-    error = `Failed to save variable: ${e instanceof Error ? e.message : e}`;
   }
 }
 
-let variables: Awaited<ReturnType<typeof getVariables>> = [];
-let loadError = "";
-
-try {
-  variables = await getVariables({ repositoryId, envName });
-} catch (e) {
-  loadError = `Failed to load variables: ${e instanceof Error ? e.message : e}`;
+if (repositoryId !== undefined) {
+  try {
+    variables = await getVariables({ repositoryId, envName });
+  } catch (e) {
+    loadError = `Failed to load variables: ${errorMessage(e)}`;
+  }
 }
 ---
 
-<Layout>
-  <Breadcrumbs names={[orgName!, repoName!, envName!]} />
-  {[error, loadError].filter(Boolean).map((message) => (
-    <div role="alert" class="alert alert-error mb-4">
-      <span>{message}</span>
-    </div>
-  ))}
+<Layout errors={[error, loadError]}>
+  <Breadcrumbs names={[orgName, repoName, envName]} />
   <VariableList variables={variables} envName={envName} client:visible />
 </Layout>

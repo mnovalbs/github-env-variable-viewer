@@ -1,5 +1,8 @@
-import { GITHUB_TOKEN } from "@src/constants/config";
+import type { components } from "@octokit/openapi-types";
 import { octokit } from "./octokit";
+
+export const errorMessage = (e: unknown) =>
+  e instanceof Error ? e.message : String(e);
 
 export const updateEnvironmentVariable = async (props: {
   name: string;
@@ -8,30 +11,33 @@ export const updateEnvironmentVariable = async (props: {
   repositoryId: number;
   envName: string;
 }) => {
-  const { name, updatedName, updatedValue, repositoryId, envName } = props;
-
-  const options = {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${GITHUB_TOKEN}`,
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-    body: JSON.stringify({
-      name: updatedName,
-      value: updatedValue,
-    }),
-  };
-
-  const res = await fetch(
-    `https://api.github.com/repositories/${repositoryId}/environments/${encodeURIComponent(envName)}/variables/${encodeURIComponent(name)}`,
-    options
+  await octokit.request(
+    "PATCH /repositories/{repository_id}/environments/{environment_name}/variables/{name}",
+    {
+      repository_id: props.repositoryId,
+      environment_name: props.envName,
+      name: props.name,
+      // the route's `name` param is the current name; the body field is the new one
+      data: { name: props.updatedName, value: props.updatedValue },
+    }
   );
+};
 
-  if (!res.ok) {
-    throw new Error(`${res.status} ${await res.text()}`);
-  }
+export const createEnvironmentVariable = async (props: {
+  name: string;
+  value: string;
+  repositoryId: number;
+  envName: string;
+}) => {
+  await octokit.request(
+    "POST /repositories/{repository_id}/environments/{environment_name}/variables",
+    {
+      repository_id: props.repositoryId,
+      environment_name: props.envName,
+      name: props.name,
+      value: props.value,
+    }
+  );
 };
 
 export const getRepository = async (props: {
@@ -40,59 +46,20 @@ export const getRepository = async (props: {
 }) => {
   const { data: repository } = await octokit.request(
     "GET /repos/{owner}/{repo}",
-    {
-      owner: props.orgName,
-      repo: props.repoName,
-      headers: {
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    }
+    { owner: props.orgName, repo: props.repoName }
   );
 
   return repository;
 };
 
-const getVariablesPerPage = async (props: {
-  repositoryId: number;
-  envName: string;
-  page: number
-}) => octokit.request(
-  "GET /repositories/{repository_id}/environments/{environment_name}/variables",
-  {
-    repository_id: props.repositoryId,
-    environment_name: props.envName,
-    page: props.page,
-    per_page: 30,
-    headers: {
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-  }
-);
-
-export const getVariables = async (props: {
-  repositoryId: number;
-  envName: string;
-}) => {
-  const LIMIT = 30
-  let page = 0
-  let totalCount = 30
-  let totalPage = Math.ceil(totalCount / LIMIT)
-  let variables: {
-    name: string;
-    value: string;
-    created_at: string;
-    updated_at: string;
-  }[] = []
-
-  while (page < totalPage) {
-    page++
-    const {
-      data: { variables: variablesPerPage, total_count },
-    } = await getVariablesPerPage({repositoryId: props.repositoryId, envName: props.envName, page})
-    variables = variables.concat(variablesPerPage)
-    totalCount = total_count
-    totalPage = Math.ceil(totalCount / LIMIT)
-  }
-
-  return variables;
-};
+export const getVariables = (props: { repositoryId: number; envName: string }) =>
+  // paginate unwraps `{ total_count, variables }` at runtime, but its types
+  // don't list this route, so the item type is given explicitly
+  octokit.paginate<components["schemas"]["actions-variable"]>(
+    "GET /repositories/{repository_id}/environments/{environment_name}/variables",
+    {
+      repository_id: props.repositoryId,
+      environment_name: props.envName,
+      per_page: 30,
+    }
+  );

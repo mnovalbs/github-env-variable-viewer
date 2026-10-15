@@ -23,7 +23,7 @@ function EnvironmentList({
         <ul className="menu bg-base-100 rounded-box">
           {environments.map((env) => (
             <li key={env.id}>
-              <a href={`/${orgName}/${repoName}/${env.name}`}>{env.name}</a>
+              <a href={`/${orgName}/${repoName}/${encodeURIComponent(env.name)}`}>{env.name}</a>
             </li>
           ))}
         </ul>
