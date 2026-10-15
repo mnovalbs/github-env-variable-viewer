@@ -1,4 +1,7 @@
-import type { EnvironmentVariable } from "../types/github";
+import type { EnvironmentVariable } from "@src/types/github";
+import { Button } from "@src/components/ui/button";
+import { Input } from "@src/components/ui/input";
+import { Textarea } from "@src/components/ui/textarea";
 
 interface VariableFormProps {
   variable: EnvironmentVariable;
@@ -8,18 +11,16 @@ interface VariableFormProps {
 function VariableForm({ variable, disabled }: Readonly<VariableFormProps>) {
   return (
     <div className="flex flex-col gap-2">
-      <input
-        className="input input-bordered input-sm w-full"
+      <Input
         placeholder="Name"
         defaultValue={variable.name}
         name="updatedName"
         disabled={disabled}
         required
       />
-      <textarea
-        className="textarea textarea-bordered textarea-sm w-full leading-4 text-xs font-[monospace]"
+      <Textarea
+        className="font-mono text-xs min-h-32"
         placeholder="Value"
-        rows={8}
         defaultValue={variable.value}
         name="updatedValue"
         disabled={disabled}
@@ -27,13 +28,9 @@ function VariableForm({ variable, disabled }: Readonly<VariableFormProps>) {
       />
 
       <div className="flex justify-end">
-        <button
-          disabled={disabled}
-          type="submit"
-          className="btn btn-sm btn-primary"
-        >
+        <Button disabled={disabled} type="submit" size="sm">
           Save
-        </button>
+        </Button>
       </div>
     </div>
   );

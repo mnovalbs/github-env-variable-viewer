@@ -1,4 +1,7 @@
 import type { SearchRepository } from "@src/types/github";
+import { Button } from "@src/components/ui/button";
+import { Input } from "@src/components/ui/input";
+import LinkList from "./LinkList";
 
 interface RepositoryListProps {
   repositories: SearchRepository[];
@@ -14,28 +17,24 @@ function RepositoryList({
       <div className="text-2xl font-bold">Select Repository</div>
 
       <form method="GET" className="flex gap-2">
-        <input
+        <Input
           name="keyword"
-          className="input flex-1 input-md"
+          className="flex-1"
           placeholder="Enter keyword..."
           defaultValue={defaultKeyword}
         />
-        <button className="btn btn-primary">Search</button>
+        <Button type="submit">Search</Button>
       </form>
 
-      {!repositories.length ? (
-        <div role="alert" className="alert alert-warning">
-          <span>No Repository Found</span>
-        </div>
-      ) : (
-        <ul className="menu bg-base-100 rounded-box flex-1 flex-nowrap max-h-full overflow-y-auto">
-          {repositories.map((repo) => (
-            <li key={repo.id}>
-              <a href={`/${repo.owner?.login}/${repo.name}`}>{repo.name}</a>
-            </li>
-          ))}
-        </ul>
-      )}
+      <LinkList
+        className="flex-1"
+        emptyMessage="No Repository Found"
+        links={repositories.map((repo) => ({
+          key: repo.id,
+          href: `/${repo.owner?.login}/${repo.name}`,
+          label: repo.name,
+        }))}
+      />
     </div>
   );
 }

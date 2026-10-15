@@ -1,4 +1,20 @@
 import type { EnvironmentVariable } from "@src/types/github";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@src/components/ui/accordion";
+import { Alert, AlertDescription } from "@src/components/ui/alert";
+import { Button } from "@src/components/ui/button";
+import { Card } from "@src/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@src/components/ui/dialog";
 import VariableForm from "./VariableForm";
 
 interface VariableListProps {
@@ -6,72 +22,52 @@ interface VariableListProps {
   envName: string
 }
 
-const MODAL_NAME = "modal_create";
-
 function VariableList({ variables, envName }: Readonly<VariableListProps>) {
   const isProd = envName.toLowerCase().startsWith('prod')
 
-  const showModal = () => {
-    (document.getElementById(MODAL_NAME) as HTMLDialogElement | null)?.showModal();
-  };
-
   return (
-    <>
-      <div className="flex flex-col gap-4 max-h-full">
-        <div className="flex justify-between items-center">
-          <div className="text-2xl font-bold">Environment Variables</div>
-          <button
-            className="btn btn-sm btn-outline btn-primary"
-            disabled={isProd}
-            onClick={showModal}
-          >
-            Add New Variable
-          </button>
-        </div>
-
-        {!variables.length ? (
-          <div role="alert" className="alert alert-warning">
-            <span>No Data Found</span>
-          </div>
-        ) : (
-          <div className="bg-base-100 rounded-box">
-            <div className="join join-vertical w-full">
-              {variables.map((variable) => (
-                <div
-                  key={variable.name}
-                  className="collapse collapse-arrow join-item border border-base-300"
-                >
-                  <input type="radio" name="my-accordion" />
-                  <div className="collapse-title text-sm font-medium flex items-center">
-                    {variable.name}
-                  </div>
-                  <div className="collapse-content">
-                    <form method="POST">
-                      <input type="hidden" name="name" value={variable.name} />
-                      <VariableForm variable={variable} disabled={isProd} />
-                    </form>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+    <div className="flex flex-col gap-4 max-h-full">
+      <div className="flex justify-between items-center">
+        <div className="text-2xl font-bold">Environment Variables</div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline" disabled={isProd}>
+              Add New Variable
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Variable</DialogTitle>
+            </DialogHeader>
+            <form method="POST">
+              <VariableForm variable={{ name: "", value: "" }} disabled={isProd} />
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <dialog id={MODAL_NAME} className="modal">
-        <div className="modal-box">
-          <form method="dialog">
-            <button className="btn btn-sm btn-circle btn-ghost absolute right-5 top-5">
-              ✕
-            </button>
-          </form>
-          <h3 className="font-bold text-lg">Add New Variable</h3>
-          <form method="POST" className="mt-4">
-            <VariableForm variable={{ name: "", value: "" }} disabled={isProd} />
-          </form>
-        </div>
-      </dialog>
-    </>
+      {!variables.length ? (
+        <Alert>
+          <AlertDescription>No Data Found</AlertDescription>
+        </Alert>
+      ) : (
+        <Card className="py-0 px-4">
+          <Accordion type="single" collapsible>
+            {variables.map((variable) => (
+              <AccordionItem key={variable.name} value={variable.name}>
+                <AccordionTrigger>{variable.name}</AccordionTrigger>
+                <AccordionContent>
+                  <form method="POST">
+                    <input type="hidden" name="name" value={variable.name} />
+                    <VariableForm variable={variable} disabled={isProd} />
+                  </form>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </Card>
+      )}
+    </div>
   );
 }
 

@@ -1,4 +1,5 @@
 import type { Environment } from "@src/types/github";
+import LinkList from "./LinkList";
 
 interface EnvironmentListProps {
   orgName: string;
@@ -15,19 +16,14 @@ function EnvironmentList({
     <div className="flex flex-col gap-2">
       <div className="text-2xl font-bold">Select Environment</div>
 
-      {!environments.length ? (
-        <div role="alert" className="alert alert-warning">
-          <span>No Data Found</span>
-        </div>
-      ) : (
-        <ul className="menu bg-base-100 rounded-box">
-          {environments.map((env) => (
-            <li key={env.id}>
-              <a href={`/${orgName}/${repoName}/${encodeURIComponent(env.name)}`}>{env.name}</a>
-            </li>
-          ))}
-        </ul>
-      )}
+      <LinkList
+        emptyMessage="No Data Found"
+        links={environments.map((env) => ({
+          key: env.id,
+          href: `/${orgName}/${repoName}/${encodeURIComponent(env.name)}`,
+          label: env.name,
+        }))}
+      />
     </div>
   );
 }

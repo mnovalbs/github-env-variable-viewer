@@ -4,7 +4,7 @@ A small web app to browse and edit **GitHub Actions environment variables** acro
 
 Flow: **Organization → Repository (search) → Environment → Variables** (view, add, edit).
 
-Built with [Astro](https://astro.build) (server-rendered) + React, styled with Tailwind + daisyUI. All data is fetched live from the GitHub API on every request; there is no database.
+Built with [Astro](https://astro.build) (server-rendered) + React, styled with Tailwind 4 + [shadcn/ui](https://ui.shadcn.com). All data is fetched live from the GitHub API on every request; there is no database.
 
 ## Setup
 

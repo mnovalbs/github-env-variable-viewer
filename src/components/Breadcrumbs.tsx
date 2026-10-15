@@ -1,3 +1,12 @@
+import { Fragment } from "react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@src/components/ui/breadcrumb";
+
 interface BreadcrumbsProps {
   names: string[];
 }
@@ -12,15 +21,18 @@ function Breadcrumbs({ names }: Readonly<BreadcrumbsProps>) {
   }, [['All Organization', '/']]);
 
   return (
-    <div className="text-xs breadcrumbs">
-      <ul>
-        {urls.map((url) => (
-          <li key={url[0]}>
-            <a href={url[1]}>{url[0]}</a>
-          </li>
+    <Breadcrumb className="mb-4">
+      <BreadcrumbList>
+        {urls.map((url, index) => (
+          <Fragment key={url[1]}>
+            {index > 0 && <BreadcrumbSeparator />}
+            <BreadcrumbItem>
+              <BreadcrumbLink href={url[1]}>{url[0]}</BreadcrumbLink>
+            </BreadcrumbItem>
+          </Fragment>
         ))}
-      </ul>
-    </div>
+      </BreadcrumbList>
+    </Breadcrumb>
   );
 }
 
