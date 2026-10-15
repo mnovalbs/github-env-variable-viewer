@@ -2,12 +2,18 @@
 import { ViewTransitions } from "astro:transitions";
 import "../styles/globals.css";
 import { Alert, AlertDescription } from "@src/components/ui/alert";
+import AppSidebar from "@src/components/AppSidebar";
+import Breadcrumbs from "@src/components/Breadcrumbs";
+import type { ShellData } from "@src/utils/request";
 
 interface Props {
+  breadcrumbs: string[];
+  shell: ShellData;
   errors?: string[];
 }
 
-const { errors = [] } = Astro.props;
+const { breadcrumbs, shell, errors = [] } = Astro.props;
+const [orgName, repoName, envName] = breadcrumbs;
 ---
 
 <!doctype html>
@@ -18,18 +24,24 @@ const { errors = [] } = Astro.props;
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <title>GitHub Environment Variable Manager</title>
+    <title>{[...breadcrumbs].reverse().concat("Env Variable Viewer").join(" · ")}</title>
     <ViewTransitions />
   </head>
   <body class="bg-muted">
-    <div class="container max-w-lg h-screen mx-auto">
-      <div class="p-8 h-full">
-        {errors.filter(Boolean).map((message) => (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{message}</AlertDescription>
-          </Alert>
-        ))}
-        <slot />
+    <div class="flex min-h-screen flex-wrap gap-2 p-2">
+      <AppSidebar shell={shell} orgName={orgName} repoName={repoName} envName={envName} />
+      <div class="flex min-w-0 grow-[999] basis-[560px] flex-col rounded-2xl border bg-background shadow-xs">
+        <div class="border-b border-border/60 px-5 py-3">
+          <Breadcrumbs names={breadcrumbs} />
+        </div>
+        <main class="mx-auto flex w-full max-w-[1040px] flex-col gap-7 px-5 py-10 sm:px-8">
+          {errors.filter(Boolean).map((message) => (
+            <Alert variant="destructive">
+              <AlertDescription>{message}</AlertDescription>
+            </Alert>
+          ))}
+          <slot />
+        </main>
       </div>
     </div>
   </body>

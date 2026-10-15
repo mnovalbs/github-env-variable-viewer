@@ -1,29 +1,45 @@
 ---
-import Breadcrumbs from "@src/components/Breadcrumbs";
-import VariableList from "@src/components/VariableList";
 import Layout from "@src/layouts/Layout.astro";
+import RepoNotFound from "@src/components/RepoNotFound";
+import VariableList from "@src/components/VariableList";
+import type { VariableDraft } from "@src/components/VariableForm";
+import { isReadOnlyEnv } from "@src/lib/utils";
 import {
   createEnvironmentVariable,
+  emptyShell,
   errorMessage,
-  updateEnvironmentVariable,
   getRepository,
+  getShellData,
+  getVariableCount,
   getVariables,
+  isNotFound,
+  updateEnvironmentVariable,
 } from "@src/utils/request";
 
 const { orgName = "", repoName = "", envName = "" } = Astro.params;
 
-const isProd = envName.toLowerCase().startsWith('prod')
+const isProd = isReadOnlyEnv(envName);
 
+let shell = emptyShell;
 let error = "";
 let loadError = "";
+let notFound = false;
 let variables: Awaited<ReturnType<typeof getVariables>> = [];
+let counts: Record<string, number | undefined> = {};
+let failedSubmission: VariableDraft | undefined;
 let repositoryId: number | undefined;
 
-try {
-  ({ id: repositoryId } = await getRepository({ orgName, repoName }));
-} catch (e) {
-  loadError = `Failed to load repository: ${errorMessage(e)}`;
-}
+const [shellResult, repoResult] = await Promise.allSettled([
+  getShellData({ orgName, repoName }),
+  getRepository({ orgName, repoName }),
+]);
+
+if (shellResult.status === "fulfilled") shell = shellResult.value;
+else loadError = `Failed to load environments: ${errorMessage(shellResult.reason)}`;
+
+if (repoResult.status === "fulfilled") repositoryId = repoResult.value.id;
+else if (isNotFound(repoResult.reason)) notFound = true;
+else loadError = `Failed to load repository: ${errorMessage(repoResult.reason)}`;
 
 if (repositoryId !== undefined && Astro.request.method === "POST") {
   if (isProd) {
@@ -54,10 +70,16 @@ if (repositoryId !== undefined && Astro.request.method === "POST") {
           envName,
         });
       }
-      // Post/Redirect/Get so a refresh doesn't resubmit the form
-      return Astro.redirect(Astro.url.pathname);
+      // Post/Redirect/Get so a refresh doesn't resubmit the form; ?saved shows a toast
+      return Astro.redirect(`${Astro.url.pathname}?saved=${encodeURIComponent(updatedName)}`);
     } catch (e) {
-      error = `Failed to save variable: ${errorMessage(e)}`;
+      // reopen the form with what the user typed and why it failed
+      failedSubmission = {
+        original: name || undefined,
+        name: updatedName,
+        value: updatedValue,
+        error: errorMessage(e),
+      };
     }
   }
 }
@@ -65,13 +87,35 @@ if (repositoryId !== undefined && Astro.request.method === "POST") {
 if (repositoryId !== undefined) {
   try {
     variables = await getVariables({ repositoryId, envName });
+    // counts are decoration: a failed count just hides that number
+    const values = await Promise.all(
+      shell.environments.map((env) =>
+        env.name === envName
+          ? variables.length
+          : getVariableCount({ repositoryId: repositoryId!, envName: env.name }).catch(() => undefined)
+      )
+    );
+    counts = Object.fromEntries(shell.environments.map((env, i) => [env.name, values[i]]));
   } catch (e) {
     loadError = `Failed to load variables: ${errorMessage(e)}`;
   }
 }
 ---
 
-<Layout errors={[error, loadError]}>
-  <Breadcrumbs names={[orgName, repoName, envName]} />
-  <VariableList variables={variables} envName={envName} client:visible />
+<Layout breadcrumbs={[orgName, repoName, envName]} shell={shell} errors={[error, loadError]}>
+  {notFound ? (
+    <RepoNotFound orgName={orgName} repoName={repoName} />
+  ) : (
+    <VariableList
+      orgName={orgName}
+      repoName={repoName}
+      envName={envName}
+      variables={variables}
+      environments={shell.environments.map(({ id, name }) => ({ id, name }))}
+      counts={counts}
+      savedName={Astro.url.searchParams.get("saved") ?? undefined}
+      failedSubmission={failedSubmission}
+      client:load
+    />
+  )}
 </Layout>

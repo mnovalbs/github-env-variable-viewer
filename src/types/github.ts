@@ -18,3 +18,5 @@ export type EnvironmentVariable = Pick<
   components["schemas"]["actions-variable"],
   "name" | "value"
 >;
+
+export type ActionVariable = components["schemas"]["actions-variable"];

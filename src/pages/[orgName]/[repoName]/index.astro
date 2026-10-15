@@ -1,32 +1,50 @@
 ---
 import Layout from "@src/layouts/Layout.astro";
-import { octokit } from "@src/utils/octokit";
-import { errorMessage } from "@src/utils/request";
 import EnvironmentList from "@src/components/EnvironmentList";
-import Breadcrumbs from "@src/components/Breadcrumbs";
-import type { Environment } from "@src/types/github";
+import RepoNotFound from "@src/components/RepoNotFound";
+import {
+  emptyShell,
+  errorMessage,
+  getRepository,
+  getShellData,
+  getVariableCount,
+  isNotFound,
+} from "@src/utils/request";
 
 const { orgName = "", repoName = "" } = Astro.params;
 
-let environments: Environment[] = []
-let error = ""
+let shell = emptyShell;
+let counts: Record<string, number | undefined> = {};
+let error = "";
+let notFound = false;
 
-try {
-  environments = await octokit.paginate("GET /repos/{owner}/{repo}/environments", {
-    owner: orgName,
-    repo: repoName,
-    per_page: 100,
-  });
-} catch (e) {
-  error = `Failed to load environments: ${errorMessage(e)}`;
+const [shellResult, repoResult] = await Promise.allSettled([
+  getShellData({ orgName, repoName }),
+  getRepository({ orgName, repoName }),
+]);
+
+if (shellResult.status === "fulfilled") shell = shellResult.value;
+else error = `Failed to load environments: ${errorMessage(shellResult.reason)}`;
+
+if (repoResult.status === "rejected") {
+  if (isNotFound(repoResult.reason)) notFound = true;
+  else error ||= `Failed to load repository: ${errorMessage(repoResult.reason)}`;
+} else {
+  // counts are decoration: a failed count just hides that number
+  const repositoryId = repoResult.value.id;
+  const values = await Promise.all(
+    shell.environments.map((env) =>
+      getVariableCount({ repositoryId, envName: env.name }).catch(() => undefined)
+    )
+  );
+  counts = Object.fromEntries(shell.environments.map((env, i) => [env.name, values[i]]));
 }
 ---
 
-<Layout errors={[error]}>
-  <Breadcrumbs names={[orgName, repoName]} />
-  <EnvironmentList
-    orgName={orgName}
-    repoName={repoName}
-    environments={environments}
-  />
+<Layout breadcrumbs={[orgName, repoName]} shell={shell} errors={[error]}>
+  {notFound ? (
+    <RepoNotFound orgName={orgName} repoName={repoName} />
+  ) : (
+    <EnvironmentList orgName={orgName} repoName={repoName} environments={shell.environments} counts={counts} />
+  )}
 </Layout>

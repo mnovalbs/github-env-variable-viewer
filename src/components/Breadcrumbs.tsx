@@ -4,6 +4,7 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@src/components/ui/breadcrumb";
 
@@ -18,16 +19,20 @@ function Breadcrumbs({ names }: Readonly<BreadcrumbsProps>) {
     newArr.push([name, `${prevUrl}${name}/`]);
 
     return newArr;
-  }, [['All Organization', '/']]);
+  }, [['Organizations', '/']]);
 
   return (
-    <Breadcrumb className="mb-4">
+    <Breadcrumb>
       <BreadcrumbList>
         {urls.map((url, index) => (
           <Fragment key={url[1]}>
-            {index > 0 && <BreadcrumbSeparator />}
+            {index > 0 && <BreadcrumbSeparator className="text-border">/</BreadcrumbSeparator>}
             <BreadcrumbItem>
-              <BreadcrumbLink href={url[1]}>{url[0]}</BreadcrumbLink>
+              {index === urls.length - 1 ? (
+                <BreadcrumbPage className="font-medium">{url[0]}</BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink href={url[1]}>{url[0]}</BreadcrumbLink>
+              )}
             </BreadcrumbItem>
           </Fragment>
         ))}

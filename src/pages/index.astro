@@ -1,22 +1,18 @@
 ---
 import Layout from "@src/layouts/Layout.astro";
 import OrganizationList from "@src/components/OrganizationList";
-import { octokit } from "@src/utils/octokit";
-import { errorMessage } from "@src/utils/request";
-import Breadcrumbs from "@src/components/Breadcrumbs";
-import type { Organization } from "@src/types/github";
+import { emptyShell, errorMessage, getShellData } from "@src/utils/request";
 
-let organizations: Organization[] = [];
+let shell = emptyShell;
 let error = "";
 
 try {
-  organizations = await octokit.paginate("GET /user/orgs", { per_page: 100 });
+  shell = await getShellData({});
 } catch (e) {
   error = `Failed to load organizations: ${errorMessage(e)}`;
 }
 ---
 
-<Layout errors={[error]}>
-  <Breadcrumbs names={[]} />
-  <OrganizationList organizations={organizations} />
+<Layout breadcrumbs={[]} shell={shell} errors={[error]}>
+  <OrganizationList organizations={shell.organizations} client:load />
 </Layout>

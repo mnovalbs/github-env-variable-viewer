@@ -2,9 +2,8 @@
 import Layout from "@src/layouts/Layout.astro";
 import type { SearchRepository } from "@src/types/github";
 import RepositoryList from "@src/components/RepositoryList";
-import Breadcrumbs from "@src/components/Breadcrumbs";
 import { octokit } from "@src/utils/octokit";
-import { errorMessage } from "@src/utils/request";
+import { emptyShell, errorMessage, getShellData } from "@src/utils/request";
 
 const { orgName = "" } = Astro.params;
 const keyword = Astro.url.searchParams.get("keyword") || "";
@@ -14,21 +13,22 @@ if (keyword) {
   q += ` ${keyword}`;
 }
 
+let shell = emptyShell;
 let repositories: SearchRepository[] = [];
 let error = "";
 
 try {
-  const { data } = await octokit.request("GET /search/repositories", {
-    q,
-    per_page: 10,
-  });
+  const [shellData, { data }] = await Promise.all([
+    getShellData({ orgName }),
+    octokit.request("GET /search/repositories", { q, per_page: 10 }),
+  ]);
+  shell = shellData;
   repositories = data.items;
 } catch (e) {
   error = `Failed to search repositories: ${errorMessage(e)}`;
 }
 ---
 
-<Layout errors={[error]}>
-  <Breadcrumbs names={[orgName]} />
-  <RepositoryList repositories={repositories} defaultKeyword={keyword} />
+<Layout breadcrumbs={[orgName]} shell={shell} errors={[error]}>
+  <RepositoryList orgName={orgName} repositories={repositories} defaultKeyword={keyword} />
 </Layout>
